@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPTV v6</title>
+
+<style>
+body{
+margin:0;
+background:#070b14;
+font-family:sans-serif;
+color:white;
+text-align:center;
+}
+
+.header{
+background:#0f1628;
+padding:12px;
+font-size:20px;
+color:#4da3ff;
+font-weight:bold;
+}
+
+video{
+width:100%;
+max-width:900px;
+background:black;
+margin-top:10px;
+border-radius:10px;
+}
+
+.controls button,
+.sectionBtns button{
+padding:7px 14px;
+margin:4px;
+border:none;
+border-radius:8px;
+background:#1f3a6b;
+color:white;
+font-size:13px;
+}
+
+.sectionBtns button.active{
+background:#2e6bff;
+}
+
+.sectionTitle{
+margin-top:10px;
+font-size:15px;
+color:#9ecbff;
+}
+
+.channels{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:6px;
+padding:10px;
+}
+
+.channels button{
+padding:9px;
+border:none;
+border-radius:8px;
+background:#16233f;
+color:white;
+font-size:13px;
+}
+
+.channels button.active{
+background:#2e6bff;
+}
+
+@media (min-width:700px){
+.channels{
+grid-template-columns:repeat(5,1fr);
+}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">IPTV v6</div>
+
+<video id="player" controls autoplay></video>
+
+<div class="controls">
+<button onclick="prev()">قبلی</button>
+<button onclick="reload()">رفرش</button>
+<button onclick="next()">بعدی</button>
+</div>
+
+<div class="sectionBtns">
+<button id="btn1" onclick="showSection(1)">اینترنت ملی </button>
+<button id="btn2" onclick="showSection(2)">اینترنت</button>
+</div>
+<div id="sectionTitle" class="sectionTitle"></div>
+<div id="channels" class="channels"></div>
+
+<script>
+
+/* ===== تنظیمات تایمر (۱۰ ثانیه) ===== */
+const FREEZE_TIME = 10000
+const RELOAD_TIME = 10000
+
+/* ===== لیست شبکه‌ها ===== */
+const channels=[
+{name:"الایام 1",url:"https://live.epress.ir/btv/a1/playlist.m3u8"},
+{name:"آفاق 2",url:"https://live.epress.ir/btv/a2/playlist.m3u8"},
+{name:"العهد 3",url:"https://live.epress.ir/btv/a3/playlist.m3u8"},
+{name:"الانوار2 4",url:"https://live.epress.ir/btv/a4/playlist.m3u8"},
+{name:"آی نیوز 5",url:"https://live.epress.ir/btv/a5/playlist.m3u8"},
+{name:"الاتجاه 6",url:"https://live.epress.ir/btv/a6/playlist.m3u8"},
+{name:"الجنوب 7",url:"https://live.epress.ir/btv/a7/playlist.m3u8"},
+{name:"المسیره 8",url:"https://live.epress.ir/btv/a8/playlist.m3u8"},
+{name:"ساحات 9",url:"https://live.epress.ir/btv/a9/playlist.m3u8"},
+{name:"نبا 10",url:"https://live.epress.ir/btv/a10/playlist.m3u8"},
+{name:"المیادین 11",url:"https://live.epress.ir/btv/a11/playlist.m3u8"},
+{name:"الاشراق 12",url:"https://live.epress.ir/btv/a12/playlist.m3u8"},
+{name:"تمدن 13",url:"https://live.epress.ir/btv/a13/playlist.m3u8"},
+{name:"القدس 14",url:"https://live.epress.ir/btv/a14/playlist.m3u8"},
+{name:"اون درد 15",url:"https://live.epress.ir/btv/a15/playlist.m3u8"},
+{name:"اینتر 16",url:"https://live.epress.ir/btv/a16/playlist.m3u8"},
+{name:"پیام 17",url:"https://live.epress.ir/btv/a17/playlist.m3u8"},
+{name:"الاولی 18",url:"https://live.epress.ir/btv/a18/playlist.m3u8"},
+
+{name:"الاولی 1",url:"https://63b03f7689049.streamlock.net/live/_definst_/1tv/playlist.m3u8"},
+{name:"آی نیوز 2",url:"https://63b03f7689049.streamlock.net/live/_definst_/34/playlist.m3u8"},
+{name:"الاتجاه 3",url:"https://63b03f7689049.streamlock.net/live/_definst_/33/playlist.m3u8"},
+{name:"الغدیر 4",url:"https://63b03f7689049.streamlock.net/live/_definst_/2/playlist.m3u8"},
+{name:"النجبا 5",url:"https://63b03f7689049.streamlock.net/live/_definst_/3/playlist.m3u8"},
+{name:"الایام 6",url:"https://63b03f7689049.streamlock.net/live/_definst_/6/playlist.m3u8"},
+{name:"العهد 7",url:"https://63b03f7689049.streamlock.net/live/_definst_/7/playlist.m3u8"},
+{name:"شهاب 8",url:"https://63b03f7689049.streamlock.net/live/_definst_/67/playlist.m3u8"},
+{name:"آفاق 9",url:"https://63b03f7689049.streamlock.net/live/_definst_/1/playlist.m3u8"},
+{name:"الاتحاد 10",url:"https://63b03f7689049.streamlock.net/live/_definst_/30/playlist.m3u8"},
+{name:"الثقلین 11",url:"https://63b03f7689049.streamlock.net/live/_definst_/16/playlist.m3u8"},
+{name:"پیام 12",url:"https://63b03f7689049.streamlock.net/live/_definst_/17/playlist.m3u8"},
+{name:"الاشراق 13",url:"https://63b03f7689049.streamlock.net/live/_definst_/19/playlist.m3u8"},
+{name:"نبا 14",url:"https://63b03f7689049.streamlock.net/live/_definst_/20/playlist.m3u8"},
+{name:"النعیم 15",url:"https://63b03f7689049.streamlock.net/live/_definst_/22/playlist.m3u8"},
+{name:"المیادین 16",url:"https://63b03f7689049.streamlock.net/live/_definst_/66/playlist.m3u8"},
+
+{name:"BBC",url:"https://vs-hls-pushb-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_persian_tv/pc_hd_abr_v2.m3u8"},
+{name:"VOA",url:"https://voa-ingest.akamaized.net/hls/live/2033876/tvmc07/playlist.m3u8"},
+{name:"Iran int1",url:"https://dev-live.livetvstream.co.uk/LS-63503-4/index.m3u8"},
+{name:"Iran int2",url:"https://63b03f7689049.streamlock.net/live/_definst_/66/playlist.m3u8"},
+{name:"Al arabiya",url:"https://live.alarabiya.net/alarabiapublish/alarabiya.smil/playlist.m3u8"},
+{name:"Al Jazeera",url:"https://live-hls-apps-aja-fa.getaj.net/AJA/index.m3u8"},
+
+]
+
+let video=document.getElementById("player")
+let current=0
+let section=1
+let freezeTimer
+let lastTime=0
+
+function showSection(s){
+section=s
+document.getElementById("btn1").classList.toggle("active",s===1)
+document.getElementById("btn2").classList.toggle("active",s===2)
+build()
+}
+
+function build(){
+let div=document.getElementById("channels")
+div.innerHTML=""
+let start=section===1?0:18
+let end=section===1?18:40
+
+for(let i=start;i<end;i++){
+let b=document.createElement("button")
+b.innerText=channels[i].name
+if(i===current) b.classList.add("active")
+b.onclick=()=>play(i)
+div.appendChild(b)
+}
+}
+
+function play(i){
+current=i
+video.src=channels[i].url
+video.play()
+localStorage.setItem("iptv",i)
+build()
+freezeCheck()
+}
+
+function reload(){
+video.src=channels[current].url
+video.play()
+}
+
+function next(){
+current=(current+1)%channels.length
+play(current)
+}
+
+function prev(){
+current=(current-1+channels.length)%channels.length
+play(current)
+}
+
+function freezeCheck(){
+clearInterval(freezeTimer)
+freezeTimer=setInterval(()=>{
+if(video.currentTime===lastTime){
+reload()
+}
+lastTime=video.currentTime
+},FREEZE_TIME)
+}
+
+video.onerror=function(){
+setTimeout(reload,RELOAD_TIME)
+}
+
+window.onload=function(){
+let last=localStorage.getItem("iptv")
+if(last) current=parseInt(last)
+showSection(current<10?1:2)
+play(current)
+}
+</script>
+
+</body>
+</html>
